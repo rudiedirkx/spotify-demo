@@ -4,7 +4,13 @@ require 'inc.bootstrap.php';
 
 require 'inc.auth.php';
 
-$playlists = spotify_get_playlists();
+try {
+	$playlists = spotify_get_playlists();
+}
+catch (AccessTokenException $ex) {
+	setcookie('spotify_token', '', 1);
+	return do_redirect('playlists.php');
+}
 
 if ( isset($_POST['playlists']) ) {
 	header('Content-type: text/plain; charset=utf-8');

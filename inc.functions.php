@@ -1,6 +1,7 @@
 <?php
 
 use GuzzleHttp\Client as Guzzle;
+use GuzzleHttp\Psr7\Response;
 
 $GLOBALS['http_log'] = [];
 
@@ -30,7 +31,26 @@ function do_redirect( $path, $query = array() ) {
 	exit;
 }
 
+function spotify_response( Response $rsp ) {
+	if ( $rsp->getStatusCode() == 200 ) {
+		return $rsp;
+	}
+
+	if ( $rsp->getStatusCode() == 401 ) {
+		$body = (string) $rsp->getBody();
+		if ( strpos($body, 'access token') !== false ) {
+			$data = json_decode($body, true);
+			throw new AccessTokenException($data['error']['message'] ?? $json);
+		}
+	}
+
+	return $rsp;
+}
+
 function spotify_http( array $options = [] ) {
+	$options += [
+		'http_errors' => false,
+	];
 	if ( !isset($options['headers']) ) {
 		$options['headers'] = [
 			'Authorization' => 'Bearer ' . SPOTIFY_ACCESS_TOKEN,
@@ -44,15 +64,15 @@ function spotify_get( string $uri, array $query = [] ) {
 	$url = 'https://api.spotify.com/' . $uri;
 	$query = $query ? '?' . http_build_query($query) : '';
 	$GLOBALS['http_log'][] = $url . $query;
-	return spotify_http()->get($url . $query);
+	return spotify_response(spotify_http()->get($url . $query));
 }
 
 function spotify_put( string $uri, array $data ) {
 	$url = strpos($uri, '://') == false ? 'https://api.spotify.com/' . $uri : $uri;
 	$GLOBALS['http_log'][] = $url;
-	return spotify_http()->put($url, [
+	return spotify_response(spotify_http()->put($url, [
 		'body' => json_encode($data),
-	]);
+	]));
 }
 
 function spotify_get_playlists() {
@@ -63,6 +83,7 @@ function spotify_get_playlists() {
 		$json = (string) $rsp->getBody();
 		$data = json_decode($json, true);
 		if ( !isset($data['items']) ) {
+dd($json);
 			throw new Exception($json);
 		}
 		$total = $data['total'];

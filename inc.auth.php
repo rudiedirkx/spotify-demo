@@ -20,17 +20,17 @@ if ( isset($_COOKIE['spotify_token']) ) {
 $redirectUri = get_url(null);
 
 if ( isset($_GET['code']) ) {
-	$request = SHTTP::create('https://accounts.spotify.com/api/token', [
-		'method' => 'post',
-		'data' => [
+	$rsp = spotify_http(['headers' => []])->post('https://accounts.spotify.com/api/token', [
+		'form_params' => [
 			'grant_type' => 'authorization_code',
 			'code' => $_GET['code'],
 			'redirect_uri' => $redirectUri,
 		],
 		'auth' => [SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET],
 	]);
-	$response = $request->request();
-	$data = $response->getResponse();
+	$json = (string) $rsp->getBody();
+	$data = json_decode($json, true);
+
 	if ( isset($data['access_token']) ) {
 		setcookie('spotify_token', $data['access_token'], strtotime('+1 year'));
 		file_put_contents('.access_token', $data['access_token']);

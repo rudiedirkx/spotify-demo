@@ -30,13 +30,14 @@ function do_redirect( $path, $query = array() ) {
 	exit;
 }
 
-function spotify_http() {
-	return new Guzzle([
-		'headers' => [
+function spotify_http( array $options = [] ) {
+	if ( !isset($options['headers']) ) {
+		$options['headers'] = [
 			'Authorization' => 'Bearer ' . SPOTIFY_ACCESS_TOKEN,
 			'Content-type' => 'application/json',
-		],
-	]);
+		];
+	}
+	return new Guzzle($options);
 }
 
 function spotify_get( string $uri, array $query = [] ) {

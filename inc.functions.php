@@ -1,6 +1,8 @@
 <?php
 
-use rdx\http\HTTP;
+use GuzzleHttp\Client as Guzzle;
+
+$GLOBALS['http_log'] = [];
 
 function html( $text ) {
 	return htmlspecialchars((string)$text, ENT_QUOTES, 'UTF-8') ?: htmlspecialchars((string)$text, ENT_QUOTES, 'ISO-8859-1');
@@ -28,37 +30,39 @@ function do_redirect( $path, $query = array() ) {
 	exit;
 }
 
-function spotify_get( $uri, array $query = [] ) {
-	$url = 'https://api.spotify.com/' . $uri;
-	$query = $query ? '?' . http_build_query($query) : '';
-	return SHTTP::create($url . $query, [
-		'method' => 'get',
+function spotify_http() {
+	return new Guzzle([
 		'headers' => [
-			'Authorization: Bearer ' . SPOTIFY_ACCESS_TOKEN,
+			'Authorization' => 'Bearer ' . SPOTIFY_ACCESS_TOKEN,
+			'Content-type' => 'application/json',
 		],
-	])->request();
+	]);
 }
 
-function spotify_put( $uri, array $data ) {
+function spotify_get( string $uri, array $query = [] ) {
+	$url = 'https://api.spotify.com/' . $uri;
+	$query = $query ? '?' . http_build_query($query) : '';
+	$GLOBALS['http_log'][] = $url . $query;
+	return spotify_http()->get($url . $query);
+}
+
+function spotify_put( string $uri, array $data ) {
 	$url = strpos($uri, '://') == false ? 'https://api.spotify.com/' . $uri : $uri;
-	return SHTTP::create($url, [
-		'method' => 'put',
-		'headers' => [
-			'Authorization: Bearer ' . SPOTIFY_ACCESS_TOKEN,
-			'Content-type: application/json',
-		],
-		'data' => json_encode($data),
-	])->request();
+	$GLOBALS['http_log'][] = $url;
+	return spotify_http()->put($url, [
+		'body' => json_encode($data),
+	]);
 }
 
 function spotify_get_playlists() {
 	$total = -1;
 	$playlists = [];
 	while ( $total == -1 || count($playlists) < $total ) {
-		$response = spotify_get('v1/me/playlists', ['offset' => count($playlists), 'limit' => 50]);
-		$data = $response->getResponse();
+		$rsp = spotify_get('v1/me/playlists', ['offset' => count($playlists), 'limit' => 50]);
+		$json = (string) $rsp->getBody();
+		$data = json_decode($json, true);
 		if ( !isset($data['items']) ) {
-			throw new Exception($response->getBody());
+			throw new Exception($json);
 		}
 		$total = $data['total'];
 		foreach ($data['items'] as $playlist) {

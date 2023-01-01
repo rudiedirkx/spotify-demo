@@ -12,9 +12,15 @@ if ( isset($_POST['playlists']) ) {
 		$isPublic = (bool) $playlist['public'];
 		$newPublic = !empty($_POST['playlists'][$id]['public']);
 		if ( $isPublic != $newPublic ) {
-			$response = spotify_put($playlist['href'], ['public' => $newPublic]);
-			if ( $response->code != 200 ) {
-				throw new Exception($response->getBody());
+			$rsp = spotify_put($playlist['href'], [
+				'public' => $newPublic,
+			]);
+			if ( $rsp->getStatusCode() != 200 ) {
+				$body = (string) $rsp->getBody();
+echo '<pre>' . $body . '</pre>';
+dump($rsp);
+exit;
+				throw new Exception($body);
 			}
 			usleep(50000);
 		}
@@ -42,7 +48,7 @@ if ( isset($_POST['playlists']) ) {
 
 <details>
 	<summary>Playlist</summary>
-	<pre><?= html(print_r(reset($playlists), true)) ?></pre>
+	<? dump(reset($playlists)) ?>
 </details>
 
 <?php

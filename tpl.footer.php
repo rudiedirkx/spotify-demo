@@ -1,4 +1,4 @@
 <details>
-	<summary>Requests (<?= count(SHTTP::$log) ?>)</summary>
-	<pre><?= html(print_r(SHTTP::$log, true)) ?></pre>
+	<summary>Requests (<?= count($GLOBALS['http_log']) ?>)</summary>
+	<pre><? dump($GLOBALS['http_log']) ?></pre>
 </details>

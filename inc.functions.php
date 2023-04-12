@@ -9,8 +9,8 @@ function html( $text ) {
 	return htmlspecialchars((string)$text, ENT_QUOTES, 'UTF-8') ?: htmlspecialchars((string)$text, ENT_QUOTES, 'ISO-8859-1');
 }
 
-function get_url( $path, $query = [] ) {
-	if ( strpos($path, '://') === false ) {
+function get_url( ?string $path, array $query = [] ) {
+	if ( strpos($path ?? '', '://') === false ) {
 		$scheme = @$_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
 		$host = $_SERVER['HTTP_HOST'];
 		$url = "$scheme$host/";
